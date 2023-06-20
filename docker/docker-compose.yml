@@ -1,1 +1,36 @@
-
+#version: "3.9"
+services:
+  configuration-service:
+    image: "ghcr.io/goldengeek22/worlddev-configuration-service"
+    container_name: "worlddev-configuration-service"
+    ports:
+      - 7000:7000
+  worlddev-postgres:
+    image: "postgres"
+    container_name: "worlddev-postgres"
+    ports:
+      - 5445:5432
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+  catalog-service:
+    depends_on:
+      configuration-service:
+        condition: service_started
+      worlddev-postgres:
+        condition: service_started
+    image: "ghcr.io/goldengeek22/worlddev-catalog-service"
+    container_name: "worlddev-catalog-service"
+    restart: on-failure:5
+    ports:
+      - 9001:9001
+      - 8001:8001
+    environment:
+      - BPL_JVM_THREAD_COUNT=50 # configure the number of threads memory should be allocated for in the JVM stack
+      - BPL_DEBUG_ENABLED=true # provided by BuildPacks
+      - BPL_DEBUG_PORT=8001 # provided by BuildPacks
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://worlddev-postgres:5432/worlddev_catalog
+      - SPRING_PROFILES_ACTIVE=testdata
+      - SPRING_CLOUD_CONFIG_URI=http://worlddev-configuration-service:7000

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worlddev-postgres
+  labels:
+    db: worlddev-postgres
+spec:
+  selector:
+    matchLabels:
+      db: worlddev-postgres
+  template:
+    metadata:
+      labels:
+        db: worlddev-postgres
+    spec:
+      containers:
+        - name: worlddev-postgres
+          image: postgres:14.4
+          env:
+            - name: POSTGRES_USER
+              value: user
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_DB
+              value: worlddev_catalog
+          resources:
+            requests:
+              cpu: 100m
+              memory: 60Mi
+            limits:
+              cpu: 200m
+              memory: 120Mi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: worlddev-postgres
+  labels:
+    db: worlddev-postgres
+spec:
+  type: ClusterIP
+  selector:
+    db: worlddev-postgres
+  ports:
+    - protocol: TCP
+      port: 5445
+      targetPort: 5432
